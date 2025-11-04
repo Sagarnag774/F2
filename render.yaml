@@ -3,6 +3,5 @@ services:
     name: f2-backend
     env: node
     plan: free
-    rootDirectory: backend
-    buildCommand: cd backend && yarn install
+    buildCommand: ./build.sh
     startCommand: cd backend && yarn start
