@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics - ArtView Museum</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <!-- Include Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #2c5aa0;
+        margin-bottom: 0.5rem;
+      }
+
+      .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      .chart-container {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+      }
+
+      .chart-title {
+        margin-bottom: 1rem;
+        color: #333;
+        font-family: "Playfair Display", serif;
+      }
+
+      .analytics-section {
+        margin-bottom: 2rem;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+      }
+
+      .refresh-btn {
+        background: #2c5aa0;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .top-artworks {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .artwork-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+      }
+
+      .artwork-item:last-child {
+        border-bottom: none;
+      }
+
+      .artwork-rank {
+        font-weight: bold;
+        margin-right: 1rem;
+        color: #2c5aa0;
+      }
+
+      .artwork-info {
+        flex: 1;
+      }
+
+      .artwork-views {
+        color: #666;
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <nav class="navbar">
+          <div class="logo">
+            <i class="fas fa-museum logo-icon"></i>
+            <span>ArtView Analytics</span>
+          </div>
+          <div class="nav-links">
+            <a href="index.html" class="nav-link">Public Site</a>
+            <a href="scanner.html" class="nav-link">Scanner</a>
+            <a href="admin.html" class="nav-link">Admin Panel</a>
+            <a href="analytics.html" class="nav-link active">Analytics</a>
+            <a href="#" class="nav-link" id="logoutBtn">
+              <i class="fas fa-sign-out-alt"></i>
+              Logout
+            </a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <section class="admin-hero">
+      <div class="container">
+        <div class="admin-welcome">
+          <h1>Museum Analytics Dashboard</h1>
+          <p>Welcome, <span id="userWelcome">Staff Member</span></p>
+        </div>
+      </div>
+    </section>
+
+    <main class="main-content">
+      <div class="container">
+        <div class="analytics-panel">
+          <!-- Overview Stats -->
+          <div class="analytics-section">
+            <div class="section-header">
+              <h2>Overview</h2>
+              <button class="refresh-btn" onclick="loadAnalytics()">
+                <i class="fas fa-sync-alt"></i>
+                Refresh Data
+              </button>
+            </div>
+
+            <div class="analytics-grid">
+              <div class="stat-card">
+                <div class="stat-number" id="totalScans">0</div>
+                <div class="stat-label">Total QR Scans</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="totalArtworks">0</div>
+                <div class="stat-label">Artworks in Collection</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="uniqueVisitors">0</div>
+                <div class="stat-label">Unique Visitors</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-number" id="avgEngagement">0s</div>
+                <div class="stat-label">Avg. Engagement Time</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Section -->
+          <div class="analytics-section">
+            <h2>Scan Analytics</h2>
+            <div class="analytics-grid">
+              <div class="chart-container">
+                <h3 class="chart-title">Scans by Hour</h3>
+                <canvas id="hourlyChart"></canvas>
+              </div>
+              <div class="chart-container">
+                <h3 class="chart-title">Scans by Day</h3>
+                <canvas id="dailyChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Artworks -->
+          <div class="analytics-section">
+            <h2>Most Popular Artworks</h2>
+            <div class="top-artworks" id="topArtworksList">
+              <div class="loading">Loading popular artworks...</div>
+            </div>
+          </div>
+
+          <!-- Engagement Metrics -->
+          <div class="analytics-section">
+            <h2>Visitor Engagement</h2>
+            <div class="analytics-grid">
+              <div class="chart-container">
+                <h3 class="chart-title">Engagement Time Distribution</h3>
+                <canvas id="engagementChart"></canvas>
+              </div>
+              <div class="chart-container">
+                <h3 class="chart-title">Scan Sources</h3>
+                <canvas id="sourceChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>ArtView Museum</h3>
+            <p>Analytics dashboard for museum insights.</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Authentication check
+      document.addEventListener("DOMContentLoaded", function () {
+        const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+        if (isLoggedIn !== "true") {
+          window.location.href = "login.html";
+          return;
+        }
+
+        // Update welcome message
+        const userWelcome = document.getElementById("userWelcome");
+        if (userWelcome) {
+          const userName =
+            localStorage.getItem("userWelcome") || "Staff Member";
+          userWelcome.textContent = userName;
+        }
+
+        // Setup logout
+        const logoutBtn = document.getElementById("logoutBtn");
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            localStorage.removeItem("isLoggedIn");
+            localStorage.removeItem("userWelcome");
+            localStorage.removeItem("userRole");
+            window.location.href = "login.html";
+          });
+        }
+
+        // Load analytics data
+        loadAnalytics();
+      });
+
+      let hourlyChart, dailyChart, engagementChart, sourceChart;
+
+      async function loadAnalytics() {
+        try {
+          // Show loading states
+          document.querySelectorAll(".stat-number").forEach((el) => {
+            el.textContent = "...";
+          });
+
+          // In a real app, you would fetch from your backend API
+          // For now, we'll use demo data
+          const analyticsData = await fetchAnalyticsData();
+
+          updateStats(analyticsData.stats);
+          updateCharts(analyticsData.charts);
+          updateTopArtworks(analyticsData.topArtworks);
+        } catch (error) {
+          console.error("Error loading analytics:", error);
+          alert("Error loading analytics data");
+        }
+      }
+
+      async function fetchAnalyticsData() {
+        // Simulate API call delay
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Demo data - replace with actual API calls
+        return {
+          stats: {
+            totalScans: 1247,
+            totalArtworks: 45,
+            uniqueVisitors: 892,
+            avgEngagement: "2:45",
+          },
+          charts: {
+            hourly: [
+              12, 8, 15, 22, 18, 25, 30, 45, 38, 32, 28, 20, 15, 18, 22, 28, 35,
+              42, 38, 32, 25, 18, 14, 10,
+            ],
+            daily: [156, 189, 204, 178, 192, 210, 198],
+            engagement: [25, 40, 20, 10, 5],
+            sources: [65, 25, 10],
+          },
+          topArtworks: [
+            { title: "Starry Night", artist: "Vincent van Gogh", views: 245 },
+            {
+              title: "The Persistence of Memory",
+              artist: "Salvador Dalí",
+              views: 189,
+            },
+            { title: "The Night Watch", artist: "Rembrandt", views: 167 },
+            {
+              title: "Girl with a Pearl Earring",
+              artist: "Johannes Vermeer",
+              views: 142,
+            },
+            {
+              title: "The Birth of Venus",
+              artist: "Sandro Botticelli",
+              views: 128,
+            },
+          ],
+        };
+      }
+
+      function updateStats(stats) {
+        document.getElementById("totalScans").textContent =
+          stats.totalScans.toLocaleString();
+        document.getElementById("totalArtworks").textContent =
+          stats.totalArtworks;
+        document.getElementById("uniqueVisitors").textContent =
+          stats.uniqueVisitors.toLocaleString();
+        document.getElementById("avgEngagement").textContent =
+          stats.avgEngagement;
+      }
+
+      function updateCharts(chartData) {
+        // Destroy existing charts if they exist
+        if (hourlyChart) hourlyChart.destroy();
+        if (dailyChart) dailyChart.destroy();
+        if (engagementChart) engagementChart.destroy();
+        if (sourceChart) sourceChart.destroy();
+
+        // Hourly Scans Chart
+        const hourlyCtx = document
+          .getElementById("hourlyChart")
+          .getContext("2d");
+        hourlyChart = new Chart(hourlyCtx, {
+          type: "line",
+          data: {
+            labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+            datasets: [
+              {
+                label: "Scans per Hour",
+                data: chartData.hourly,
+                borderColor: "#2c5aa0",
+                backgroundColor: "rgba(44, 90, 160, 0.1)",
+                tension: 0.4,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
+          },
+        });
+
+        // Daily Scans Chart
+        const dailyCtx = document.getElementById("dailyChart").getContext("2d");
+        dailyChart = new Chart(dailyCtx, {
+          type: "bar",
+          data: {
+            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            datasets: [
+              {
+                label: "Scans per Day",
+                data: chartData.daily,
+                backgroundColor: "#4CAF50",
+                borderColor: "#45a049",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: false,
+              },
+            },
+          },
+        });
+
+        // Engagement Chart
+        const engagementCtx = document
+          .getElementById("engagementChart")
+          .getContext("2d");
+        engagementChart = new Chart(engagementCtx, {
+          type: "doughnut",
+          data: {
+            labels: ["<1 min", "1-3 min", "3-5 min", "5-10 min", ">10 min"],
+            datasets: [
+              {
+                data: chartData.engagement,
+                backgroundColor: [
+                  "#FF6384",
+                  "#36A2EB",
+                  "#FFCE56",
+                  "#4BC0C0",
+                  "#9966FF",
+                ],
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+            },
+          },
+        });
+
+        // Source Chart
+        const sourceCtx = document
+          .getElementById("sourceChart")
+          .getContext("2d");
+        sourceChart = new Chart(sourceCtx, {
+          type: "pie",
+          data: {
+            labels: ["QR Code Scan", "Manual Entry", "Image Upload"],
+            datasets: [
+              {
+                data: chartData.sources,
+                backgroundColor: ["#2c5aa0", "#4CAF50", "#FF9800"],
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                position: "bottom",
+              },
+            },
+          },
+        });
+      }
+
+      function updateTopArtworks(artworks) {
+        const container = document.getElementById("topArtworksList");
+
+        if (artworks.length === 0) {
+          container.innerHTML =
+            '<div class="loading">No scan data available</div>';
+          return;
+        }
+
+        container.innerHTML = artworks
+          .map(
+            (artwork, index) => `
+                <div class="artwork-item">
+                    <div class="artwork-rank">#${index + 1}</div>
+                    <div class="artwork-info">
+                        <strong>${artwork.title}</strong>
+                        <div>by ${artwork.artist}</div>
+                    </div>
+                    <div class="artwork-views">
+                        ${artwork.views} views
+                    </div>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      // Auto-refresh every 5 minutes
+      setInterval(loadAnalytics, 5 * 60 * 1000);
+    </script>
+  </body>
+</html>

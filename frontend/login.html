@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Staff Login - ArtView Museum</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <nav class="navbar">
+          <div class="logo">
+            <i class="fas fa-museum logo-icon"></i>
+            <span>ArtView Staff Portal</span>
+          </div>
+          <div class="nav-links">
+            <a href="index.html" class="nav-link">Public Site</a>
+            <a href="scanner.html" class="nav-link">Scanner</a>
+            <a href="login.html" class="nav-link active">Staff Login</a>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <section class="login-hero">
+      <div class="container">
+        <h1>Staff Portal Access</h1>
+        <p>Login to manage artwork collection and generate QR codes</p>
+      </div>
+    </section>
+
+    <main class="main-content">
+      <div class="container">
+        <div class="login-container">
+          <div class="card login-card">
+            <div class="login-header">
+              <i class="fas fa-user-shield"></i>
+              <h2>Staff Authentication</h2>
+              <p>Enter your credentials to access the admin panel</p>
+            </div>
+
+            <form id="loginForm" class="login-form">
+              <div class="form-group">
+                <label for="username">
+                  <i class="fas fa-user"></i>
+                  Username
+                </label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  required
+                  placeholder="Enter your username"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="password">
+                  <i class="fas fa-lock"></i>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  required
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-full">
+                <i class="fas fa-sign-in-alt"></i>
+                Sign In
+              </button>
+            </form>
+
+            <div id="loginError" class="error-message" style="display: none">
+              <i class="fas fa-exclamation-circle"></i>
+              <span id="errorText"></span>
+            </div>
+
+            <div class="login-help">
+              <h4>Demo Credentials</h4>
+              <div class="credentials">
+                <div class="credential-item">
+                  <strong>Admin:</strong> admin / museum123
+                </div>
+                <div class="credential-item">
+                  <strong>Staff:</strong> staff / staff123
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>ArtView Museum</h3>
+            <p>Staff management system for artwork collection.</p>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+  </body>
+</html>
