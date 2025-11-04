@@ -485,13 +485,53 @@
     </footer>
 
     <script>
+      // Authentication check - MUST BE AT THE TOP
+      document.addEventListener("DOMContentLoaded", function () {
+        // Check if user is logged in
+        const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+        if (isLoggedIn !== "true") {
+          // Redirect to login page if not authenticated
+          window.location.href = "login.html";
+          return;
+        }
+
+        // Update welcome message with username
+        const userWelcome = document.getElementById("userWelcome");
+        if (userWelcome) {
+          const userName = localStorage.getItem("username") || "Staff Member";
+          userWelcome.textContent = userName;
+        }
+
+        // Setup logout functionality
+        const logoutBtn = document.getElementById("logoutBtn");
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            logout();
+          });
+        }
+
+        // Initialize the admin panel functionality
+        initializeAdminPanel();
+      });
+
+      // Logout function
+      function logout() {
+        // Clear all login-related data
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("username");
+        localStorage.removeItem("loginTime");
+        localStorage.removeItem("userWelcome");
+        localStorage.removeItem("userRole");
+
+        // Redirect to login page with logout message
+        window.location.href = "login.html?logout=true";
+      }
+
       // Artworks data storage (in a real app, this would be from a backend)
       let artworks = JSON.parse(localStorage.getItem("artworks")) || [];
       let currentQRCodeData = null;
-
-      document.addEventListener("DOMContentLoaded", function () {
-        initializeAdminPanel();
-      });
 
       function initializeAdminPanel() {
         // File upload functionality

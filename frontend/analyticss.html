@@ -29,6 +29,12 @@
         border-radius: 12px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         text-align: center;
+        transition: transform 0.2s ease;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
       }
 
       .stat-number {
@@ -63,7 +69,7 @@
 
       .section-header {
         display: flex;
-        justify-content: between;
+        justify-content: space-between;
         align-items: center;
         margin-bottom: 1.5rem;
       }
@@ -75,6 +81,16 @@
         padding: 0.5rem 1rem;
         border-radius: 4px;
         cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      .refresh-btn:hover {
+        background: #1e3a8a;
+      }
+
+      .refresh-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
       }
 
       .top-artworks {
@@ -89,6 +105,11 @@
         align-items: center;
         padding: 1rem;
         border-bottom: 1px solid #eee;
+        transition: background 0.2s ease;
+      }
+
+      .artwork-item:hover {
+        background: #f8f9fa;
       }
 
       .artwork-item:last-child {
@@ -99,6 +120,8 @@
         font-weight: bold;
         margin-right: 1rem;
         color: #2c5aa0;
+        font-size: 1.2rem;
+        min-width: 2rem;
       }
 
       .artwork-info {
@@ -108,6 +131,74 @@
       .artwork-views {
         color: #666;
         font-weight: 500;
+        background: #f8f9fa;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #666;
+      }
+
+      .loading i {
+        animation: spin 1s linear infinite;
+        margin-right: 0.5rem;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .last-updated {
+        text-align: right;
+        color: #666;
+        font-size: 0.875rem;
+        margin-top: 1rem;
+      }
+
+      .export-btn {
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 0.5rem;
+        transition: background 0.3s ease;
+      }
+
+      .export-btn:hover {
+        background: #45a049;
+      }
+
+      @media (max-width: 768px) {
+        .section-header {
+          flex-direction: column;
+          gap: 1rem;
+          align-items: flex-start;
+        }
+
+        .analytics-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .artwork-item {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.5rem;
+        }
+
+        .artwork-views {
+          align-self: flex-end;
+        }
       }
     </style>
   </head>
@@ -149,10 +240,20 @@
           <div class="analytics-section">
             <div class="section-header">
               <h2>Overview</h2>
-              <button class="refresh-btn" onclick="loadAnalytics()">
-                <i class="fas fa-sync-alt"></i>
-                Refresh Data
-              </button>
+              <div>
+                <button
+                  class="refresh-btn"
+                  id="refreshBtn"
+                  onclick="loadAnalytics()"
+                >
+                  <i class="fas fa-sync-alt"></i>
+                  Refresh Data
+                </button>
+                <button class="export-btn" onclick="exportData()">
+                  <i class="fas fa-download"></i>
+                  Export Data
+                </button>
+              </div>
             </div>
 
             <div class="analytics-grid">
@@ -172,6 +273,9 @@
                 <div class="stat-number" id="avgEngagement">0s</div>
                 <div class="stat-label">Avg. Engagement Time</div>
               </div>
+            </div>
+            <div class="last-updated" id="lastUpdated">
+              Last updated: <span id="updateTime">Never</span>
             </div>
           </div>
 
@@ -194,7 +298,9 @@
           <div class="analytics-section">
             <h2>Most Popular Artworks</h2>
             <div class="top-artworks" id="topArtworksList">
-              <div class="loading">Loading popular artworks...</div>
+              <div class="loading">
+                <i class="fas fa-spinner"></i> Loading popular artworks...
+              </div>
             </div>
           </div>
 
@@ -240,8 +346,7 @@
         // Update welcome message
         const userWelcome = document.getElementById("userWelcome");
         if (userWelcome) {
-          const userName =
-            localStorage.getItem("userWelcome") || "Staff Member";
+          const userName = localStorage.getItem("username") || "Staff Member";
           userWelcome.textContent = userName;
         }
 
@@ -250,10 +355,7 @@
         if (logoutBtn) {
           logoutBtn.addEventListener("click", function (e) {
             e.preventDefault();
-            localStorage.removeItem("isLoggedIn");
-            localStorage.removeItem("userWelcome");
-            localStorage.removeItem("userRole");
-            window.location.href = "login.html";
+            logout();
           });
         }
 
@@ -261,38 +363,112 @@
         loadAnalytics();
       });
 
+      // Logout function
+      function logout() {
+        // Clear all login-related data
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("username");
+        localStorage.removeItem("loginTime");
+        localStorage.removeItem("userWelcome");
+        localStorage.removeItem("userRole");
+
+        // Redirect to login page with logout message
+        window.location.href = "login.html?logout=true";
+      }
+
       let hourlyChart, dailyChart, engagementChart, sourceChart;
+      let currentAnalyticsData = null;
 
       async function loadAnalytics() {
         try {
+          const refreshBtn = document.getElementById("refreshBtn");
+          refreshBtn.disabled = true;
+          refreshBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+
           // Show loading states
           document.querySelectorAll(".stat-number").forEach((el) => {
             el.textContent = "...";
           });
 
-          // In a real app, you would fetch from your backend API
-          // For now, we'll use demo data
-          const analyticsData = await fetchAnalyticsData();
+          // Try to fetch from backend API first, then fallback to demo data
+          let analyticsData;
+          try {
+            analyticsData = await fetchBackendAnalytics();
+          } catch (error) {
+            console.log("Backend unavailable, using demo data");
+            analyticsData = await fetchDemoAnalyticsData();
+          }
 
+          currentAnalyticsData = analyticsData;
           updateStats(analyticsData.stats);
           updateCharts(analyticsData.charts);
           updateTopArtworks(analyticsData.topArtworks);
+
+          // Update last updated time
+          document.getElementById("updateTime").textContent =
+            new Date().toLocaleString();
         } catch (error) {
           console.error("Error loading analytics:", error);
-          alert("Error loading analytics data");
+          alert("Error loading analytics data. Please try again.");
+        } finally {
+          const refreshBtn = document.getElementById("refreshBtn");
+          refreshBtn.disabled = false;
+          refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Data';
         }
       }
 
-      async function fetchAnalyticsData() {
+      async function fetchBackendAnalytics() {
+        // Try to fetch from your backend API
+        const [statsResponse, popularResponse, hourlyResponse, dailyResponse] =
+          await Promise.all([
+            fetch("/api/analytics/overview").then((r) =>
+              r.ok ? r.json() : Promise.reject()
+            ),
+            fetch("/api/analytics/popular").then((r) =>
+              r.ok ? r.json() : Promise.reject()
+            ),
+            fetch("/api/analytics/hourly").then((r) =>
+              r.ok ? r.json() : Promise.reject()
+            ),
+            fetch("/api/analytics/daily").then((r) =>
+              r.ok ? r.json() : Promise.reject()
+            ),
+          ]);
+
+        return {
+          stats: statsResponse.stats,
+          topArtworks: popularResponse.artworks,
+          charts: {
+            hourly: hourlyResponse.data,
+            daily: dailyResponse.data.map((d) => d.scans),
+            engagement: [25, 40, 20, 10, 5], // Default values
+            sources: [65, 25, 10], // Default values
+          },
+        };
+      }
+
+      async function fetchDemoAnalyticsData() {
         // Simulate API call delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Get actual artworks from localStorage for accurate count
+        const artworks = JSON.parse(localStorage.getItem("artworks")) || [];
+        const scanAnalytics =
+          JSON.parse(localStorage.getItem("scanAnalytics")) || [];
+
+        // Calculate real stats from localStorage data
+        const totalScans = scanAnalytics.length;
+        const uniqueVisitors = new Set(
+          scanAnalytics.map((scan) => scan.userAgent)
+        ).size;
 
         // Demo data - replace with actual API calls
         return {
           stats: {
-            totalScans: 1247,
-            totalArtworks: 45,
-            uniqueVisitors: 892,
+            totalScans: totalScans || 1247,
+            totalArtworks: artworks.length || 45,
+            uniqueVisitors: uniqueVisitors || 892,
             avgEngagement: "2:45",
           },
           charts: {
@@ -304,25 +480,36 @@
             engagement: [25, 40, 20, 10, 5],
             sources: [65, 25, 10],
           },
-          topArtworks: [
-            { title: "Starry Night", artist: "Vincent van Gogh", views: 245 },
-            {
-              title: "The Persistence of Memory",
-              artist: "Salvador Dalí",
-              views: 189,
-            },
-            { title: "The Night Watch", artist: "Rembrandt", views: 167 },
-            {
-              title: "Girl with a Pearl Earring",
-              artist: "Johannes Vermeer",
-              views: 142,
-            },
-            {
-              title: "The Birth of Venus",
-              artist: "Sandro Botticelli",
-              views: 128,
-            },
-          ],
+          topArtworks:
+            artworks.length > 0
+              ? artworks.slice(0, 5).map((artwork, index) => ({
+                  title: artwork.title,
+                  artist: artwork.artist,
+                  views: Math.floor(Math.random() * 200) + 50, // Random views for demo
+                }))
+              : [
+                  {
+                    title: "Starry Night",
+                    artist: "Vincent van Gogh",
+                    views: 245,
+                  },
+                  {
+                    title: "The Persistence of Memory",
+                    artist: "Salvador Dalí",
+                    views: 189,
+                  },
+                  { title: "The Night Watch", artist: "Rembrandt", views: 167 },
+                  {
+                    title: "Girl with a Pearl Earring",
+                    artist: "Johannes Vermeer",
+                    views: 142,
+                  },
+                  {
+                    title: "The Birth of Venus",
+                    artist: "Sandro Botticelli",
+                    views: 128,
+                  },
+                ],
         };
       }
 
@@ -360,6 +547,7 @@
                 backgroundColor: "rgba(44, 90, 160, 0.1)",
                 tension: 0.4,
                 fill: true,
+                borderWidth: 2,
               },
             ],
           },
@@ -368,6 +556,25 @@
             plugins: {
               legend: {
                 display: false,
+              },
+              tooltip: {
+                mode: "index",
+                intersect: false,
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Number of Scans",
+                },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: "Time of Day",
+                },
               },
             },
           },
@@ -396,6 +603,15 @@
                 display: false,
               },
             },
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Number of Scans",
+                },
+              },
+            },
           },
         });
 
@@ -417,6 +633,8 @@
                   "#4BC0C0",
                   "#9966FF",
                 ],
+                borderWidth: 2,
+                borderColor: "#fff",
               },
             ],
           },
@@ -442,6 +660,8 @@
               {
                 data: chartData.sources,
                 backgroundColor: ["#2c5aa0", "#4CAF50", "#FF9800"],
+                borderWidth: 2,
+                borderColor: "#fff",
               },
             ],
           },
@@ -481,6 +701,44 @@
             `
           )
           .join("");
+      }
+
+      function exportData() {
+        if (!currentAnalyticsData) {
+          alert(
+            "No data available to export. Please refresh the analytics first."
+          );
+          return;
+        }
+
+        // Create a CSV string
+        let csv = "ArtView Museum Analytics Export\n\n";
+        csv += "Overview Statistics\n";
+        csv += `Total Scans,${currentAnalyticsData.stats.totalScans}\n`;
+        csv += `Total Artworks,${currentAnalyticsData.stats.totalArtworks}\n`;
+        csv += `Unique Visitors,${currentAnalyticsData.stats.uniqueVisitors}\n`;
+        csv += `Average Engagement,${currentAnalyticsData.stats.avgEngagement}\n\n`;
+
+        csv += "Top Artworks\n";
+        csv += "Rank,Title,Artist,Views\n";
+        currentAnalyticsData.topArtworks.forEach((artwork, index) => {
+          csv += `${index + 1},${artwork.title},${artwork.artist},${
+            artwork.views
+          }\n`;
+        });
+
+        // Create and download the file
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `artview-analytics-${
+          new Date().toISOString().split("T")[0]
+        }.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
       }
 
       // Auto-refresh every 5 minutes
